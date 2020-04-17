@@ -528,7 +528,7 @@ while(1){
 //	demo1();
 //	demo2();
 //	demo3();
-//	demo4();
+	demo4();
     /* USER CODE END WHILE */
 
 	/* USER CODE BEGIN 3 */
