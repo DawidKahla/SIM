@@ -9,6 +9,7 @@ const float far = -120.0f;
 
 int compareSquareDistance(const void* square01, const void* square02)
 {
+	
 	PAW_Square* square1 = (PAW_Square*)square01;
 	int distance1 =
 		square1->corner.data[2] + square1->side[0].data[2] / 2 + square1->side[1].data[2] / 2;
