@@ -89,14 +89,14 @@ static void MX_LTDC_Init(void);
 static void MX_SPI5_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
+/*void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
 	if((GPIO_Pin == B1_Pin) && ((HAL_GetTick() - old_time) >200)){
 		old_time = HAL_GetTick();
 		demo_number++;
 		demo_number %= 5;
 	}
 
-}
+} */
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -307,8 +307,33 @@ void demo4()
 		PAW_Figure_toShip(&statek, 120, black);
 
 		PAW_Scene_push(&scenka, statek);
-		while(demo_number == 4){
+		PAW_Figure meteor1 = PAW_Figure_create(1, 0, 0, 0);
+		PAW_Figure meteor2 = PAW_Figure_create(1, 0, 0, 0);
+		PAW_Figure meteor3 = PAW_Figure_create(1, 0, 0, 0);
+		PAW_Figure meteor4 = PAW_Figure_create(1, 0, 0, 0);
+		PAW_Figure_toMeteor(&meteor1, 60, 80, 20, red);
+		PAW_Figure_toMeteor(&meteor2, 200, 220, 20, green);
+		PAW_Figure_toMeteor(&meteor3, 80, 300, 20, blue);
+		PAW_Figure_toMeteor(&meteor4, 140, 160, 20, yellow);
+		PAW_Scene_push(&scenka, meteor1);
+		PAW_Scene_push(&scenka, meteor2);
+		PAW_Scene_push(&scenka, meteor3);
+		PAW_Scene_push(&scenka, meteor4);
+
+		float animation_speed=1.001;
+		uint32_t score;
+		while(/*demo_number == 4*/ true){
 					PAW_Scene_display(scenka);
+					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);  		// animacja statku została zwielokrotniona, aby
+					PAW_Figure_animation_meteor(&meteor1, animation_speed);	// zmniejszyc efekt lagow
+					PAW_Figure_animation_meteor(&meteor2, animation_speed);
+					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);
+					PAW_Figure_animation_meteor(&meteor3, animation_speed);
+					PAW_Figure_animation_meteor(&meteor4, animation_speed);
+					if (animation_speed < 32){
+						animation_speed=animation_speed*1.001;
+		}else{
+			score=3468;
 		}
 		PAW_Scene_destr(&scenka);
 
@@ -519,12 +544,13 @@ int main(void)
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
 	BSP_SDRAM_Init();
 	PAW_Buffer_init();
+	GYRO_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 while(1){
-	demo();
+//	demo();
 //	demo1();
 //	demo2();
 //	demo3();
@@ -598,6 +624,19 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
+static void GYRO_Init(void)
+{
+	// w razie problemów z działaniem żyroskopu, przekopiowac ten kod do maina pod inicjalizacjami peryferiow
+	// nie mam pojecia czemu czasem zyroskop dziala, a czasem nie, ale powyzdsza operacja przewaznie pomaga
+	// a jak nie pomaga to jej kilkukrotne stosowanie i usuwanie juz pomaga
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+	address_ctrl1 = 0x20;
+	HAL_SPI_Transmit(&hspi5, &address_ctrl1, 1, 50);
+	data_ctrl1 = 0x0f;
+	HAL_SPI_Transmit(&hspi5, &data_ctrl1, 1, 50);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+}
+	
 static void MX_DMA2D_Init(void)
 {
 
