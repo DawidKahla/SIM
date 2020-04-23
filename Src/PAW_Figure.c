@@ -866,6 +866,70 @@ PAW_Vector PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t min_x, c
 	return(Data_for_collision);
 }
 
+void PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t x, const uint16_t y, const uint16_t r, const uint32_t a_color){
+	for(size_t i =0 ; i < 4; ++i)
+			{
+				figure->elements[i] = 0;
+			}
+	figure->flag=2;
+	PAW_Vector center = {2, {x, y, 0.0f}};
+	PAW_Circle circle = {a_color, false, r, center};
+	PAW_Figure_push_circle(figure, circle);
+}
+
+// ponizsza funkcja do prawidlowego dzialania wymaga sceny o wymiarze 240x320
+void PAW_Figure_animation_meteor(PAW_Figure* const figure, const float fall_speed){
+	uint16_t x, r;
+	PAW_Vector translation = {2, {0.0f, -fall_speed*1.0f, 0.0f}};
+	PAW_Figure_translate(figure, &translation);
+	if (figure->circles->center.data[1] < 0.0f){
+		r=rand_uint16_t(5, 40)*1.0f;                        	// losowanie promienia nowego meteorytu
+		x=rand_uint16_t(0+r, 240-r)*1.0f;						// losowanie szerokosci, tak by nie wychodzic poza scene
+		PAW_Vector translation = {2, {x, 320.0f, 0.0f}};
+		PAW_Figure_translate(figure, &translation);
+		figure->circles->radius = r;
+
+	}
+
+}
+
+//uint8_t PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDef const hspi_in){
+//	uint8_t data=255;
+//
+//	//if (figure->flag!=1){
+//	//	return -1;
+//	//}else{
+//		data=GET_Y_H(hspi_in);
+//		if (data<250){
+//			if (data<128){
+//				PAW_Vector translation1={3, {-1.0f, 0.0f, 0.0f}};
+//				PAW_Figure_translate(figure, &translation1);
+//			}else{
+//			PAW_Vector translation2 = {3, {1.0f, 0.0f, 0.0f}};
+//				PAW_Figure_translate(figure, &translation2);
+//
+//		//	}
+//	//	}
+////	}
+//	return data;
+//}
+
+void PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDef hspi_in){
+
+	uint8_t data = GET_Y_H(hspi_in);
+	float speed_ship=0.0f;
+			if (data<128){  //w lewo
+				speed_ship = (data+2)/7*1.0f;    // modyfikator +1/7 ze wzgledu na roznice w jakosci odczytow, normalnie wzor by wygladal (data+1)/7
+			}else{   		// w prawo
+				speed_ship = (data%128-128)/7*1.0f;
+			}
+			if (data==255){ //brak ruchu
+				speed_ship = 0.0f;
+			}
+			PAW_Vector translation = {3, {speed_ship, 0.0f, 0.0f}};
+			PAW_Figure_translate(figure, &translation);
+}
+
 
 void PAW_Figure_clearTextures(PAW_Figure* const figure)
 {
