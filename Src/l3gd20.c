@@ -16,7 +16,7 @@
 // zwrócony zostaje odczyt o wartości 0-255
 // w przypadku nagłych odchyleń żyroskop zwraca przez kilka odczytów tą samą wartosc, dodatkowo nie sa one zbyt miarodajne
 // przy ruchach niewidocznych GET_X_H zwraca 0, natomiast GET_Y_H 255
-
+// TIMEOUT_GYRO został ujęty w ten sposób, aby zapobiec kilku errorom przy kompilacji
 uint8_t const TIMEOUT_GYRO = 50;
 
 uint8_t GET_X_L(SPI_HandleTypeDef hspi_in){
