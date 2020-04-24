@@ -848,23 +848,23 @@ PAW_Vector PAW_Figure_toShip(PAW_Figure* const figure, const float a_width, cons
 
 }
 
-PAW_Vector PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t min_x, const uint16_t max_x, const uint16_t min_y, const uint16_t max_y, const uint16_t min_r, const uint16_t max_r, const uint32_t a_color){
-	for(size_t i =0 ; i < 4; ++i)
-		{
-			figure->elements[i] = 0;
-		}
-		figure->flag=2;
-	const uint32_t black = 0xFF000000;//{255,0,0,0};
-	uint16_t x=rand_uint16_t(min_x, max_x)*1.0f;
-	uint16_t y=rand_uint16_t(min_y, max_y)*1.0f;
-	uint16_t r=rand_uint16_t(min_r, max_r)*1.0f;
+// PAW_Vector PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t min_x, const uint16_t max_x, const uint16_t min_y, const uint16_t max_y, const uint16_t min_r, const uint16_t max_r, const uint32_t a_color){
+// 	for(size_t i =0 ; i < 4; ++i)
+// 		{
+// 			figure->elements[i] = 0;
+// 		}
+// 		figure->flag=2;
+// 	const uint32_t black = 0xFF000000;//{255,0,0,0};
+// 	uint16_t x=rand_uint16_t(min_x, max_x)*1.0f;
+// 	uint16_t y=rand_uint16_t(min_y, max_y)*1.0f;
+// 	uint16_t r=rand_uint16_t(min_r, max_r)*1.0f;
 
-	PAW_Vector center = {2, {x, y, 0.0f}};
-	PAW_Circle circle = {black, true, r, center};
-	PAW_Circle_push_circle(&figure, circle);
-	PAW_Vector Data_for_collision={3, {x, y, r}}; // dane do kolizji w postaci wspolrzedna X, wspolrzedna Y, promien
-	return(Data_for_collision);
-}
+// 	PAW_Vector center = {2, {x, y, 0.0f}};
+// 	PAW_Circle circle = {black, true, r, center};
+// 	PAW_Circle_push_circle(&figure, circle);
+// 	PAW_Vector Data_for_collision={3, {x, y, r}}; // dane do kolizji w postaci wspolrzedna X, wspolrzedna Y, promien
+// 	return(Data_for_collision);
+// }
 
 void PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t x, const uint16_t y, const uint16_t r, const uint32_t a_color){
 	for(size_t i =0 ; i < 4; ++i)
@@ -885,7 +885,9 @@ void PAW_Figure_animation_meteor(PAW_Figure* const figure, const float fall_spee
 	if (figure->circles->center.data[1] < 0.0f){
 		r=rand_uint16_t(5, 40)*1.0f;                        	// losowanie promienia nowego meteorytu
 		x=rand_uint16_t(0+r, 240-r)*1.0f;						// losowanie szerokosci, tak by nie wychodzic poza scene
-		PAW_Vector translation = {2, {x, 320.0f, 0.0f}};
+		//PAW_Vector translation = {2, {x, 320.0f, 0.0f}};	// ten sposob przemieszczania sprawial, ze po pewnym czasie bledy sie nakladaly, i przestawala dzialac animacja i wykrywanie kolizji
+		figure->circles->center.data[1] = 320.0f;
+		figure->circles->center.data[0] = x; 			// to dziala duzo lepiej
 		PAW_Figure_translate(figure, &translation);
 		figure->circles->radius = r;
 
@@ -893,35 +895,14 @@ void PAW_Figure_animation_meteor(PAW_Figure* const figure, const float fall_spee
 
 }
 
-//uint8_t PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDef const hspi_in){
-//	uint8_t data=255;
-//
-//	//if (figure->flag!=1){
-//	//	return -1;
-//	//}else{
-//		data=GET_Y_H(hspi_in);
-//		if (data<250){
-//			if (data<128){
-//				PAW_Vector translation1={3, {-1.0f, 0.0f, 0.0f}};
-//				PAW_Figure_translate(figure, &translation1);
-//			}else{
-//			PAW_Vector translation2 = {3, {1.0f, 0.0f, 0.0f}};
-//				PAW_Figure_translate(figure, &translation2);
-//
-//		//	}
-//	//	}
-////	}
-//	return data;
-//}
-
 void PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDef hspi_in){
 
 	uint8_t data = GET_Y_H(hspi_in);
 	float speed_ship=0.0f;
 			if (data<128){  //w lewo
-				speed_ship = (data+2)/7*1.0f;    // modyfikator +1/7 ze wzgledu na roznice w jakosci odczytow, normalnie wzor by wygladal (data+1)/7
+				speed_ship = (data+1)/5*1.0f;    // zwiekszona czulosc, by ulatwic sterowanie
 			}else{   		// w prawo
-				speed_ship = (data%128-128)/7*1.0f;
+				speed_ship = (data%128-128)/5*1.0f;
 			}
 			if (data==255){ //brak ruchu
 				speed_ship = 0.0f;
@@ -930,6 +911,19 @@ void PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDe
 			PAW_Figure_translate(figure, &translation);
 }
 
+boolean PAW_Figure_Check_collision(PAW_Figure* const ship, PAW_Figure* const meteor){
+	uint16_t x_ship = ship->lines[0].begin.data[0];			//z czolowego punktu statku dostajemy sie do środka statku i aproksymujemy przez okrąg
+	uint16_t y_ship = ship->lines[0].begin.data[1]-22.5;  		 //modyfikator -22.5 zalezy od skali(-15*scale), to trzeba bedzie jeszcze jakos uniezaleznic
+	uint16_t r_ship = 22.5;
+	uint16_t x_meteor = meteor->circles->center.data[0];
+	uint16_t y_meteor = meteor->circles->center.data[1];
+	uint16_t r_meteor = meteor->circles->radius;
+	if (((x_ship-x_meteor)*(x_ship-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
+		return true;                                    // zamiast brac pierwiastek z lewej strony nierownosci
+	}else{							// podnosze druga strone do kwadratu
+		return false;
+	}
+}
 
 void PAW_Figure_clearTextures(PAW_Figure* const figure)
 {
