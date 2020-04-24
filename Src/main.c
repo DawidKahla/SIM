@@ -89,14 +89,14 @@ static void MX_LTDC_Init(void);
 static void MX_SPI5_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-/*void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
+void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
 	if((GPIO_Pin == B1_Pin) && ((HAL_GetTick() - old_time) >200)){
 		old_time = HAL_GetTick();
 		demo_number++;
-		demo_number %= 5;
+		demo_number %= 2;
 	}
 
-} */
+} 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -170,7 +170,7 @@ void demo(){
 		PAW_Scene_push(&PAW_demo, star);
 		PAW_Scene_push(&PAW_demo, star2);
 
-		while(demo_number == 0){
+		while(demo_number == 1){
 			PAW_Scene_display(PAW_demo);
 			PAW_Figure_rotate(&star, &display_center, yaw1);
 			PAW_Figure_rotate(&star2, &display_center, yaw2);
@@ -322,18 +322,24 @@ void demo4()
 
 		float animation_speed=1.001;
 		uint32_t score;
-		while(/*demo_number == 4*/ true){
+		while(demo_number == 0){
 					PAW_Scene_display(scenka);
 					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);  		// animacja statku została zwielokrotniona, aby
 					PAW_Figure_animation_meteor(&meteor1, animation_speed);	// zmniejszyc efekt lagow
 					PAW_Figure_animation_meteor(&meteor2, animation_speed);
+			if (PAW_Figure_Check_collision(&statek, &meteor1) || PAW_Figure_Check_collision(&statek, &meteor2)){
+						HAL_Delay(1000);
+						demo_number=1;
+					}
 					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);
 					PAW_Figure_animation_meteor(&meteor3, animation_speed);
 					PAW_Figure_animation_meteor(&meteor4, animation_speed);
+			if (PAW_Figure_Check_collision(&statek, &meteor3) || PAW_Figure_Check_collision(&statek, &meteor4)){
+						HAL_Delay(1000);
+						demo_number=1;
+					}
 					if (animation_speed < 32){
 						animation_speed=animation_speed*1.001;
-		}else{
-			score=3468;
 		}
 		PAW_Scene_destr(&scenka);
 
