@@ -61,12 +61,13 @@ void PAW_Figure_paint(PAW_Figure* const figure, const PAW_Line* const, const PAW
 void PAW_Figure_clearTextures(PAW_Figure* const figure);
 
 /* DK SIM */
-PAW_Vector PAW_Figure_toShip(PAW_Figure* const figure, const float a_width, const uint32_t a_color);
-PAW_Vector PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t min_x, const uint16_t max_x, const uint16_t min_y, const uint16_t max_y, const uint16_t min_r, const uint16_t max_r, const uint32_t a_color);
+void PAW_Figure_toShip(PAW_Figure* const figure, const float a_width, const uint32_t a_color);
+//PAW_Vector PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t min_x, const uint16_t max_x, const uint16_t min_y, const uint16_t max_y, const uint16_t min_r, const uint16_t max_r, const uint32_t a_color);
 void PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t x, const uint16_t y, const uint16_t r, const uint32_t a_color);
 void PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDef hspi_in);
 void PAW_Figure_animation_meteor(PAW_Figure* const figure, const float fall_speed);
-
+boolean PAW_Figure_Check_collision(PAW_Figure* const ship, PAW_Figure* const meteor);
+	
 #ifdef __cplusplus
 }
 #endif
