@@ -843,8 +843,8 @@ PAW_Vector PAW_Figure_toShip(PAW_Figure* const figure, const float a_width, cons
 	PAW_Figure_push_line(figure, L15);
 	PAW_Figure_push_line(figure, L16);
 
-	PAW_Vector Data_for_collision={3, {width, 20*scale, 15*scale}}; // dane do kolizji w postaci wspolrzedna X, wspolrzedna Y, promien
-	return(Data_for_collision);
+	//PAW_Vector Data_for_collision={3, {width, 20*scale, 15*scale}}; // dane do kolizji w postaci wspolrzedna X, wspolrzedna Y, promien
+	//return(Data_for_collision);
 
 }
 
@@ -872,7 +872,7 @@ void PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t x, const uint1
 				figure->elements[i] = 0;
 			}
 	figure->flag=2;
-	PAW_Vector center = {2, {x, y, 0.0f}};
+	PAW_Vector center = {2, {x, y}};
 	PAW_Circle circle = {a_color, false, r, center};
 	PAW_Figure_push_circle(figure, circle);
 }
@@ -880,7 +880,7 @@ void PAW_Figure_toMeteor(PAW_Figure* const figure, const uint16_t x, const uint1
 // ponizsza funkcja do prawidlowego dzialania wymaga sceny o wymiarze 240x320
 void PAW_Figure_animation_meteor(PAW_Figure* const figure, const float fall_speed){
 	uint16_t x, r;
-	PAW_Vector translation = {2, {0.0f, -fall_speed*1.0f, 0.0f}};
+	PAW_Vector translation = {2, {0.0f, -fall_speed*1.0f}};
 	PAW_Figure_translate(figure, &translation);
 	if (figure->circles->center.data[1] < 0.0f){
 		r=rand_uint16_t(5, 40)*1.0f;                        	// losowanie promienia nowego meteorytu
@@ -900,11 +900,11 @@ void PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDe
 	uint8_t data = GET_Y_H(hspi_in);
 	float speed_ship=0.0f;
 			if (data<128){  //w lewo
-				speed_ship = (data+1)/5*1.0f;    // zwiekszona czulosc, by ulatwic sterowanie
+				speed_ship = (data+1)/4*1.0f;    // zwiekszona czulosc, by ulatwic sterowanie
 			}else{   		// w prawo
-				speed_ship = (data%128-128)/5*1.0f;
+				speed_ship = (data%128-128)/4*1.0f;
 			}
-			if (data==255){ //brak ruchu
+			if (data>254 || data<1){ //brak ruchu
 				speed_ship = 0.0f;
 			}
 			PAW_Vector translation = {3, {speed_ship, 0.0f, 0.0f}};
@@ -912,16 +912,182 @@ void PAW_Figure_l3gd20_animation_ship(PAW_Figure* const figure, SPI_HandleTypeDe
 }
 
 boolean PAW_Figure_Check_collision(PAW_Figure* const ship, PAW_Figure* const meteor){
-	uint16_t x_ship = ship->lines[0].begin.data[0];			//z czolowego punktu statku dostajemy sie do środka statku i aproksymujemy przez okrąg
-	uint16_t y_ship = ship->lines[0].begin.data[1]-22.5;  		 //modyfikator -22.5 zalezy od skali(-15*scale), to trzeba bedzie jeszcze jakos uniezaleznic
-	uint16_t r_ship = 22.5;
+uint16_t x_ship = ship->lines[0].begin.data[0];
+	uint16_t y_ship = ship->lines[0].begin.data[1]-15;
+	uint16_t r_ship = 17;
 	uint16_t x_meteor = meteor->circles->center.data[0];
 	uint16_t y_meteor = meteor->circles->center.data[1];
 	uint16_t r_meteor = meteor->circles->radius;
 	if (((x_ship-x_meteor)*(x_ship-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
 		return true;                                    // zamiast brac pierwiastek z lewej strony nierownosci
-	}else{							// podnosze druga strone do kwadratu
-		return false;
+	}else{												// podnosze druga strone do kwadratu
+	y_ship = ship->lines[0].begin.data[1]-30;
+		if (((x_ship-x_meteor)*(x_ship-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
+			return true;
+		}else{     // obsluga przekroczenia ekranu
+			if(x_ship>222){
+				uint16_t x_ship2 = 0;
+				r_ship = x_ship-222;  // nie jestem pewien czemu, ale czasem tu wyrzuca ogromne wartoscie, niezgodne z tym co powinno, wiec biore reszte z dzielenia, rpzez teoretycznie maksymalna wartosc, jak tutaj powinna byc osiagana
+				if (((x_ship2-x_meteor)*(x_ship2-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
+					return true;
+				}else{
+					y_ship = ship->lines[0].begin.data[1]-15;
+					if (((x_ship2-x_meteor)*(x_ship2-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
+						return true;
+					}
+				}
+			}
+			if(x_ship<18){
+				uint16_t x_ship2 = 240;
+				r_ship = 18-x_ship;
+				if (((x_ship2-x_meteor)*(x_ship2-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
+					return true;
+				}else{
+					y_ship = ship->lines[0].begin.data[1]-30;
+					if (((x_ship2-x_meteor)*(x_ship2-x_meteor)+(y_ship-y_meteor)*(y_ship-y_meteor))<((r_ship+r_meteor)*(r_ship+r_meteor))){
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+	}
+}
+
+void PAW_Figure_Number(PAW_Figure* const figure, const uint8_t position, const uint8_t representation, const uint32_t a_color){
+
+	/* we wstępnej wersji ta funkcja zakladala dowolnie wybrany rozmiar planszy, ale byl problem z wyswietlaniem, wiec ucieklem sie do konkretow */
+
+	uint16_t y_add;
+	for(size_t i =0 ; i < 4; ++i)
+	{
+		figure->elements[i] = 0;
+	}
+
+	switch(position){
+	case 1:
+		y_add = 0;
+		break;
+	case 2:
+		y_add = /* 3/16*max_y;*/ 60;
+		break;
+	case 3:
+		y_add = /* 6/16*max_y;*/ 120;
+		break;
+	case 4:
+		y_add = /* 9/16*max_y;*/ 180;
+		break;
+	case 5:
+		y_add = /*12/16*max_y; */ 240;
+		break;
+	default:
+		y_add=0;
+		break;
+	}
+
+
+	PAW_Vector P1 = {3, {192, 15+y_add, 0}};
+	PAW_Vector P2 = {3, {192, 17+y_add, 0}};
+	PAW_Vector P3 = {3, {192, 63+y_add, 0}};
+	PAW_Vector P4 = {3, {192, 65+y_add, 0}};
+	PAW_Vector P5 = {3, {122, 65+y_add, 0}};
+	PAW_Vector P6 = {3, {120, 65+y_add, 0}};
+	PAW_Vector P7 = {3, {118, 65+y_add, 0}};
+	PAW_Vector P8 = {3, {48, 65+y_add, 0}};
+	PAW_Vector P9 = {3, {48, 63+y_add, 0}};
+	PAW_Vector P10 = {3, {48, 17+y_add, 0}};
+	PAW_Vector P11 = {3, {48, 15+y_add, 0}};
+	PAW_Vector P12 = {3, {118, 15+y_add, 0}};
+	PAW_Vector P13 = {3, {120, 15+y_add, 0}};
+	PAW_Vector P14 = {3, {122, 15+y_add, 0}};
+
+
+	PAW_Line L1 = {a_color, false, P14, P1};
+	PAW_Line L2 = {a_color, false, P2, P3};
+	PAW_Line L3 = {a_color, false, P4, P5};
+	PAW_Line L4 = {a_color, false, P7, P8};
+	PAW_Line L5 = {a_color, false, P9, P10};
+	PAW_Line L6 = {a_color, false, P11, P12};
+	PAW_Line L7 = {a_color, false, P6, P13};
+
+
+	switch (representation){
+	case 0:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L3);
+		PAW_Figure_push_line(figure, L4);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L6);
+		break;
+	case 1:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L6);
+		break;
+	case 2:
+		PAW_Figure_push_line(figure, L3);
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L6);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	case 3:
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L6);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	case 4:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L4);
+		PAW_Figure_push_line(figure, L6);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	case 5:
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L4);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	case 6:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L3);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L4);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	case 7:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L6);
+		PAW_Figure_push_line(figure, L5);
+		break;
+	case 8:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L3);
+		PAW_Figure_push_line(figure, L4);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L6);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	case 9:
+		PAW_Figure_push_line(figure, L2);
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L4);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L6);
+		PAW_Figure_push_line(figure, L7);
+		break;
+	default:
+		PAW_Figure_push_line(figure, L1);
+		PAW_Figure_push_line(figure, L3);
+		PAW_Figure_push_line(figure, L5);
+		PAW_Figure_push_line(figure, L7);
+		break;
 	}
 }
 
