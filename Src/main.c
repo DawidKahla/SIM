@@ -102,6 +102,51 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void display_score(){
+	uint8_t dozens_thousands = score/10000;
+	score %= 10000;
+	uint8_t thousands = score/1000;
+	score %= 1000;
+	uint8_t hundreds = score/100;
+	score %= 100;
+	uint8_t dozens = score/10;
+	score %= 10;
+	uint8_t units = score;
+	score=0;
+
+	const uint32_t green = 0xFF55FF33;//{255,85,255,51};
+	const uint32_t black = 0xFF000000;//{255,0,0,0};
+	const uint32_t white = 0xFFFFFFFF;//{255,255,255,255};
+	const uint32_t red = 0xFFE81717;//{ 255,232,23,23};
+	const uint32_t blue = 0xFF177FE9;//{255,23,127,232};
+	const uint32_t yellow = 0xFFE8A017;//{255,232,210,23};
+
+	PAW_Scene scenka = PAW_Scene_create(240, 320, 25, 0xFFFFFFFF);
+
+	PAW_Figure fig_dozens_thousands = PAW_Figure_create(0, 0, 7, 0);
+	PAW_Figure fig_thousands = PAW_Figure_create(0, 0, 7, 0);
+	PAW_Figure fig_hundreds = PAW_Figure_create(0, 0, 7, 0);
+	PAW_Figure fig_dozens = PAW_Figure_create(0, 0, 7, 0);
+	PAW_Figure fig_units = PAW_Figure_create(0, 0, 7, 0);
+
+	PAW_Figure_Number(&fig_dozens_thousands, 5, dozens_thousands, black);
+	PAW_Figure_Number(&fig_thousands, 4, thousands, black);
+	PAW_Figure_Number(&fig_hundreds, 3, hundreds, black);
+	PAW_Figure_Number(&fig_dozens, 2, dozens, black);
+	PAW_Figure_Number(&fig_units, 1, units, black);
+
+	PAW_Scene_push(&scenka, fig_dozens_thousands);
+	PAW_Scene_push(&scenka, fig_thousands);
+	PAW_Scene_push(&scenka, fig_hundreds);
+	PAW_Scene_push(&scenka, fig_dozens);
+	PAW_Scene_push(&scenka, fig_units);
+
+	while(demo_number == 1){
+		PAW_Scene_display(scenka);
+	}
+			PAW_Scene_destr(&scenka);
+}
+
 void demo(){
 	int8_t yaw1 = -1;
 	int8_t yaw2 = 2;
@@ -291,7 +336,7 @@ void demo(){
 //	PAW_Scene_destr(&scenka);
 //}
 
-void demo4()
+void game()
 {
 		const uint32_t green = 0xFF55FF33;//{255,85,255,51};
 		const uint32_t black = 0xFF000000;//{255,0,0,0};
@@ -300,51 +345,64 @@ void demo4()
 		const uint32_t blue = 0xFF177FE9;//{255,23,127,232};
 		const uint32_t yellow = 0xFFE8A017;//{255,232,210,23};
 
+		// implementacja sceny
 		PAW_Scene scenka = PAW_Scene_create(240, 320, 25, 0xFFFFFFFF);
-
+		// implementacja statku
 		PAW_Figure statek = PAW_Figure_create(0, 0, 16, 0);
-
 		PAW_Figure_toShip(&statek, 120, black);
-
 		PAW_Scene_push(&scenka, statek);
+
+//		PAW_Figure nine = PAW_Figure_create(0, 0, 7, 0);
+//		PAW_Figure_toShip(&nine, 200, red);
+//		PAW_Figure_Number(&nine,3,9,240,320,black);
+//		PAW_Scene_push(&scenka, nine);
+
+		// implementacja meteorów
 		PAW_Figure meteor1 = PAW_Figure_create(1, 0, 0, 0);
 		PAW_Figure meteor2 = PAW_Figure_create(1, 0, 0, 0);
 		PAW_Figure meteor3 = PAW_Figure_create(1, 0, 0, 0);
 		PAW_Figure meteor4 = PAW_Figure_create(1, 0, 0, 0);
 		PAW_Figure_toMeteor(&meteor1, 60, 80, 20, red);
-		PAW_Figure_toMeteor(&meteor2, 200, 220, 20, green);
-		PAW_Figure_toMeteor(&meteor3, 80, 300, 20, blue);
-		PAW_Figure_toMeteor(&meteor4, 140, 160, 20, yellow);
+		PAW_Figure_toMeteor(&meteor2, 220, 240, 20, green);
+		PAW_Figure_toMeteor(&meteor3, 110, 320, 20, blue);
+		PAW_Figure_toMeteor(&meteor4, 160, 160, 20, yellow);
 		PAW_Scene_push(&scenka, meteor1);
 		PAW_Scene_push(&scenka, meteor2);
 		PAW_Scene_push(&scenka, meteor3);
 		PAW_Scene_push(&scenka, meteor4);
 
+
 		float animation_speed=1.001;
-		uint32_t score;
+
 		while(demo_number == 0){
 					PAW_Scene_display(scenka);
-					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);  		// animacja statku została zwielokrotniona, aby
-					PAW_Figure_animation_meteor(&meteor1, animation_speed);	// zmniejszyc efekt lagow
+					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);  		
+					PAW_Figure_animation_meteor(&meteor1, animation_speed);	
 					PAW_Figure_animation_meteor(&meteor2, animation_speed);
-			if (PAW_Figure_Check_collision(&statek, &meteor1) || PAW_Figure_Check_collision(&statek, &meteor2)){
+					xdata1=GET_Y_H(hspi5);
+					if (PAW_Figure_Check_collision(&statek, &meteor1) || PAW_Figure_Check_collision(&statek, &meteor2)){
 						HAL_Delay(1000);
 						demo_number=1;
 					}
 					PAW_Figure_l3gd20_animation_ship(&statek, hspi5);
 					PAW_Figure_animation_meteor(&meteor3, animation_speed);
 					PAW_Figure_animation_meteor(&meteor4, animation_speed);
-			if (PAW_Figure_Check_collision(&statek, &meteor3) || PAW_Figure_Check_collision(&statek, &meteor4)){
+					if (PAW_Figure_Check_collision(&statek, &meteor3) || PAW_Figure_Check_collision(&statek, &meteor4)){
 						HAL_Delay(1000);
 						demo_number=1;
 					}
-					if (animation_speed < 32){
+					score++;
+					if (score == 99999){
+						demo_number=1;
+					}
+
+					if (animation_speed < 32){        						// ograniczenie predkosci
 						animation_speed=animation_speed*1.001;
+					}
+
 		}
 		PAW_Scene_destr(&scenka);
-
 }
-
 //void demo4()
 //{
 //		const uint32_t green = 0xFF55FF33;//{255,85,255,51};
@@ -560,7 +618,9 @@ while(1){
 //	demo1();
 //	demo2();
 //	demo3();
-	demo4();
+	game();
+	display_score();
+
     /* USER CODE END WHILE */
 
 	/* USER CODE BEGIN 3 */
